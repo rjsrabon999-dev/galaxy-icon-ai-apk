@@ -311,8 +311,8 @@ function fbFilePut(key,blob){
       return Promise.all(ps);
     }).then(function(){
       try{localStorage.setItem("fbfv:"+id,String(v))}catch(e){}
-      return FB.db.ref("files/"+ek).set({n:blob.name||"",c:n,v:v});
-    }).catch(function(e){console.warn("Firebase ফাইল আপলোড ব্যর্থ:",e&&e.message||e)});
+      return FB.db.ref("files/"+ek).set({n:blob.name||"",c:n,v:v}).then(function(){try{toast("সার্ভারে ফাইল আপলোড সম্পন্ন — এখন সবাই নামাতে পারবে")}catch(e){}});
+    }).catch(function(e){console.warn("Firebase ফাইল আপলোড ব্যর্থ:",e&&e.message||e);try{toast("সার্ভারে আপলোড ব্যর্থ: "+(e&&e.message||e))}catch(x){}});
   };
   fr.readAsDataURL(blob);
 }
@@ -493,6 +493,7 @@ h+='<div class="bar"><button onclick="back()" aria-label="পেছনে">←</
 h+='<div class="dh">'+icon(a)+'<div><h1>'+esc(a.n)+'</h1><p>'+esc(devName(a))+vbH(a.owner)+'</p></div></div>';
 h+='<div class="stats"><div><b>'+bn(avg(a))+' ★</b>'+bn((a.owner?0:20)+(S.rev[a.id]||[]).length)+' রিভিউ</div><div><b>'+szt(a)+'</b>সাইজ</div><div><b id="dlc">'+dlText(a)+'</b>ডাউনলোড</div></div>';
 h+='<div class="act" id="act">'+actHtml(a)+'</div>';
+if(a.ft=="html")h+='<div style="padding:0 16px 10px"><button class="btn ghost" style="width:100%" onclick="addHome()"><span>🏠 হোম স্ক্রিনে যোগ করুন</span></button></div>';
 if(!isReal(a))h+='<div class="demo">ℹ️ এই অ্যাপটি এখন শুধু ডেমো। পূর্ণ সংস্করণে ইন্টারনেট/সার্ভার লাগে, তাই খুললে প্রদর্শনী পর্দা দেখাবে।</div>';
 h+=shotsHtml(a);
 h+='<h2>এই অ্যাপ সম্পর্কে</h2><div class="sec"><p>'+esc(a.ds)+'</p>'+(a.owner?'<p style="margin-top:8px;font-size:13px">ভার্সন '+bn(a.v||1)+' • '+(a.ft=="apk"?"APK":"HTML")+(a.up?' • আপডেট: '+a.up:"")+'</p>':"")+'</div>';
@@ -526,11 +527,14 @@ r.className="";r.style.display="flex";r.style.background="linear-gradient(160deg
 r.innerHTML=icon(a)+'<h1>'+a.n+'</h1><p>অ্যাপটি চালু হয়েছে (ডেমো)</p><button onclick="closeRun()">বন্ধ করুন</button>'}
 function closeRun(){var r=$("run");if(r.dataset.u){URL.revokeObjectURL(r.dataset.u);r.dataset.u=""}r.style.display="none";r.innerHTML=""}
 function apkHelp(){if($("apkh"))return;var d=document.createElement("div");d.id="apkh";
-d.innerHTML='<div class="bx"><h3>📲 APK ইনস্টল করুন</h3>১. ডাউনলোড শেষ হলে নোটিফিকেশন বা ফোনের <b>Downloads</b> ফোল্ডারে ফাইলটি ট্যাপ করুন।<br>২. "অজানা উৎস থেকে ইনস্টল" অনুমতি চাইলে <b>চালু</b> করুন।<br>৩. <b>ইনস্টল</b> ট্যাপ করুন। ইনস্টল শেষে অ্যাপটি ফোনের হোম স্ক্রিনে আসবে।<button class="btn" onclick="this.parentNode.parentNode.remove()"><span>বুঝেছি</span></button></div>';
+d.innerHTML='<div class="bx"><h3>📲 APK ইনস্টল করুন</h3>১. ডাউনলোড শেষ হলে নোটিফিকেশন বা ফোনের <b>Downloads</b> ফোল্ডারে ফাইলটি ট্যাপ করুন।<br>২. "অজানা উৎস থেকে ইনস্টল" অনুমতি চাইলে <b>চালু</b> করুন।<br>৩. <b>ইনস্টল</b> ট্যাপ করুন। ইনস্টল শেষে অ্যাপটি ফোনের হোম স্ক্রিনে আসবে।<div style="margin-top:10px;font-size:13px">ডাউনলোড না হলে নিচের বাটন চাপুন:</div><button class="btn ghost" onclick="apkAlt()"><span>⬇️ আবার ডাউনলোড করুন</span></button><button class="btn ghost" onclick="apkShare()"><span>📁 ফাইল সেভ / শেয়ার করুন</span></button><button class="btn" onclick="this.parentNode.parentNode.remove()"><span>বুঝেছি</span></button></div>';
 document.body.appendChild(d)}
+var LDL=null;
+function apkAlt(){if(!LDL)return toast("ফাইল পাওয়া যায়নি");var fr=new FileReader();fr.onload=function(){var l=document.createElement("a");l.href=fr.result;l.download=LDL.n;document.body.appendChild(l);l.click();l.remove();toast("ডাউনলোড শুরু হয়েছে")};fr.onerror=function(){toast("ডাউনলোড ব্যর্থ হয়েছে")};fr.readAsDataURL(new Blob([LDL.b],{type:"application/octet-stream"}))}
+function apkShare(){if(!LDL)return toast("ফাইল পাওয়া যায়নি");try{var f=new File([LDL.b],LDL.n,{type:"application/vnd.android.package-archive"});if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:LDL.n}).catch(function(){});else toast("এই ফোনে শেয়ার সাপোর্ট নেই")}catch(e){toast("শেয়ার করা যায়নি")}}
 function dlApk(a){getF("file:"+a.id,function(b){if(!b){toast("APK ফাইল পাওয়া যায়নি");return}
 var u=URL.createObjectURL(new Blob([b],{type:"application/vnd.android.package-archive"})),l=document.createElement("a");
-l.href=u;l.download=(a.n||"app").replace(/[^\w\u0980-\u09FF -]/g,"")+".apk";document.body.appendChild(l);l.click();l.remove();setTimeout(function(){URL.revokeObjectURL(u)},8000);
+LDL={b:b,n:((a.n||"app").replace(/[^\w\u0980-\u09FF -]/g,"")||"app")+".apk"};l.href=u;l.download=LDL.n;document.body.appendChild(l);l.click();l.remove();setTimeout(function(){URL.revokeObjectURL(u)},8000);
 apkHelp()})}
 /* reviews */
 function stars(n){return "★★★★★".slice(0,n)+"☆☆☆☆☆".slice(0,5-n)}
@@ -926,6 +930,35 @@ persist:function(){try{localStorage.setItem("appbazar",JSON.stringify({inst:S.in
 refresh:function(){if(cur){var n=APPS.filter(function(a){return a.id==cur.id})[0];if(n){cur=n;return}closeDet();return}if(fbTyping("#main"))return;render()},
 assets:function(){if(cur){var e=$("dlc");if(e)e.textContent=dlText(cur);return}if(fbTyping("#main"))return;render()}
 };
+
+/* ===== হোম স্ক্রিনে যোগ করুন (HTML অ্যাপ) ===== */
+var HSP=null;
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();HSP=e});
+function hsIcon(a,cb){var c=document.createElement("canvas");c.width=c.height=512;var x=c.getContext("2d");
+function fin(){try{cb(c.toDataURL("image/png"))}catch(e){cb("")}}
+var im=IMG["logo:"+a.id];
+if(im){var i=new Image();i.onload=function(){x.drawImage(i,0,0,512,512);fin()};i.onerror=function(){hsDraw(x,a);fin()};i.src=im;return}
+hsDraw(x,a);fin()}
+function hsDraw(x,a){var g=x.createLinearGradient(0,0,512,512);g.addColorStop(0,(a.g&&a.g[0])||"#0b8f5a");g.addColorStop(1,(a.g&&a.g[1])||"#0b7285");x.fillStyle=g;x.fillRect(0,0,512,512);x.font="260px sans-serif";x.textAlign="center";x.textBaseline="middle";x.fillText(a.e||"📱",256,276)}
+function hsHelp(){if($("apkh"))return;var d=document.createElement("div");d.id="apkh";
+d.innerHTML='<div class="bx"><h3>🏠 হোম স্ক্রিনে যোগ করুন</h3>১. ব্রাউজারের উপরের ডানদিকের <b>⋮</b> মেনু চাপুন।<br>২. <b>হোম স্ক্রিনে যোগ করুন</b> (Add to Home screen) চাপুন।<br>৩. <b>যোগ করুন</b> চাপুন। এরপর হোম স্ক্রিনের আইকন থেকে অ্যাপটি সরাসরি খুলবে।<button class="btn" onclick="this.parentNode.parentNode.remove()"><span>বুঝেছি</span></button></div>';
+document.body.appendChild(d)}
+function addHome(){var a=cur;if(!a)return;
+try{history.replaceState(null,"",location.pathname+location.search+"#app="+a.id)}catch(e){}
+hsIcon(a,function(ic){try{
+var m={name:a.n,short_name:String(a.n).slice(0,12),start_url:location.pathname+location.search+"#app="+a.id,scope:location.pathname,display:"standalone",background_color:"#ffffff",theme_color:"#0b8f5a"};
+if(ic)m.icons=[{src:ic,sizes:"512x512",type:"image/png",purpose:"any"}];
+var o=document.querySelector('link[rel="manifest"]');if(o)o.remove();
+var l=document.createElement("link");l.rel="manifest";l.href="data:application/manifest+json;charset=utf-8,"+encodeURIComponent(JSON.stringify(m));document.head.appendChild(l);
+if(ic){var t=document.querySelector('link[rel="apple-touch-icon"]');if(t)t.remove();var z=document.createElement("link");z.rel="apple-touch-icon";z.href=ic;document.head.appendChild(z)}}catch(e){}
+if(HSP){try{HSP.prompt();HSP=null;return}catch(e){}}
+hsHelp()})}
+(function(){var cd=closeDet;closeDet=function(){cd();try{if(/^#app=/.test(location.hash))history.replaceState(null,"",location.pathname+location.search)}catch(e){}}})();
+function hsBoot(){var m=/^#app=(\d+)/.exec(location.hash);if(!m)return;var id=+m[1],n=0,iv=setInterval(function(){n++;var a=APPS.filter(function(x){return x.id==id})[0];
+if(a&&a.ft=="html"){clearInterval(iv);openDet(id);runApp();return}
+if(n>40)clearInterval(iv)},300)}
+hsBoot();
+
 idbOpen(function(){loadImgs(function(){render();if(cur)draw();fbStart()})});
 </script>
 </body>
