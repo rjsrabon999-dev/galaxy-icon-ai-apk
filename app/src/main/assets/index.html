@@ -505,21 +505,22 @@ function actHtml(a){var i=S.inst[a.id],p=S.dling[a.id];
 if(p!=null)return '<button class="btn ghost" onclick="cancelDl()"><span>বাতিল • '+bn(Math.floor(p))+'%</span></button><button class="btn"><div class="pg" style="width:'+p+'%"></div><span>ডাউনলোড হচ্ছে...</span></button>';
 if(i){var u='<button class="btn ghost" onclick="uninst()"><span>আনইনস্টল</span></button>';
 if(i<(a.v||1))return u+'<button class="btn" onclick="install()"><span>আপডেট</span></button>';
-return u+'<button class="btn" onclick="runApp()"><span>'+(a.ft=="apk"&&!(nat()&&PKG[a.id])?"APK আবার নামান":"খুলুন")+'</span></button>'}
+return u+'<button class="btn" onclick="runApp()"><span>'+(a.ft=="apk"?"APK আবার নামান":"খুলুন")+'</span></button>'}
 return '<button class="btn" onclick="install()"><span>ইনস্টল</span></button>'}
 function refAct(){if(cur&&$("act"))$("act").innerHTML=actHtml(cur)}
 var timers={};
-function install(){var a=cur;if(a&&a.ft=="apk"&&nat()){nInstall(a);return}S.dling[a.id]=0;refAct();
+function install(){var a=cur;
+if(a.ft=="apk"){dlApk(a,function(ok){if(!ok)return;S.inst[a.id]=a.v||1;save();fbCount(a.id);toast(a.n+" ডাউনলোড হচ্ছে");if(cur&&cur.id==a.id)refAct()});return}
+S.dling[a.id]=0;refAct();
 timers[a.id]=setInterval(function(){S.dling[a.id]+=Math.random()*9+3;
 if(S.dling[a.id]>=100){clearInterval(timers[a.id]);delete S.dling[a.id];S.inst[a.id]=a.v||1;save();fbCount(a.id);toast(a.n+" ইনস্টল হয়েছে");if(a.ft=="apk")dlApk(a);if(cur&&cur.id==a.id)refAct();return}
 if(cur&&cur.id==a.id)refAct()},250)}
-function cancelDl(){nCancel[cur.id]=1;clearInterval(timers[cur.id]);delete S.dling[cur.id];refAct();toast("ডাউনলোড বাতিল হয়েছে")}
-function uninst(){if(confirm(cur.n+" আনইনস্টল করবেন?")){nUninst(cur);delete S.inst[cur.id];save();refAct();toast("আনইনস্টল হয়েছে")}}
+function cancelDl(){clearInterval(timers[cur.id]);delete S.dling[cur.id];refAct();toast("ডাউনলোড বাতিল হয়েছে")}
+function uninst(){if(confirm(cur.n+" আনইনস্টল করবেন?")){delete S.inst[cur.id];save();refAct();toast("আনইনস্টল হয়েছে")}}
 function openWeb(a,part,trusted){var r=$("run"),u=URL.createObjectURL(new Blob([part],{type:"text/html"}));
 r.className="web";r.style.display="flex";r.style.background="#000";
 r.innerHTML='<div class="rbar"><button onclick="closeRun()">✕ বন্ধ করুন</button><b>'+esc(a.n)+'</b></div><iframe sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads'+(trusted?' allow-same-origin':'')+'" src="'+u+'"></iframe>';r.dataset.u=u}
 function runApp(){var a=cur,r=$("run");
-if(a.ft=="apk"&&nat()&&PKG[a.id]){nOpen(a);return}
 if(a.ft=="apk"){fbCount(a.id);dlApk(a);return}
 if(a.ft=="html"){getF("file:"+a.id,function(b){if(!b){toast("ফাইল পাওয়া যায়নি");return}openWeb(a,b,false)});return}
 if(BI[a.id]&&!a.owner){openWeb(a,BI[a.id],true);return}
@@ -527,52 +528,18 @@ r.className="";r.style.display="flex";r.style.background="linear-gradient(160deg
 r.innerHTML=icon(a)+'<h1>'+a.n+'</h1><p>অ্যাপটি চালু হয়েছে (ডেমো)</p><button onclick="closeRun()">বন্ধ করুন</button>'}
 function closeRun(){var r=$("run");if(r.dataset.u){URL.revokeObjectURL(r.dataset.u);r.dataset.u=""}r.style.display="none";r.innerHTML=""}
 function apkHelp(){if($("apkh"))return;var d=document.createElement("div");d.id="apkh";
-d.innerHTML='<div class="bx"><h3>📲 APK ইনস্টল করুন</h3>১. ডাউনলোড শেষ হলে নোটিফিকেশন বা ফোনের <b>Downloads</b> ফোল্ডারে ফাইলটি ট্যাপ করুন।<br>২. "অজানা উৎস থেকে ইনস্টল" অনুমতি চাইলে <b>চালু</b> করুন।<br>৩. <b>ইনস্টল</b> ট্যাপ করুন। ইনস্টল শেষে অ্যাপটি ফোনের হোম স্ক্রিনে আসবে।<button class="btn" onclick="this.parentNode.parentNode.remove()"><span>বুঝেছি</span></button></div>';
+d.innerHTML='<div class="bx"><h3>📲 ডাউনলোড হয়েছে</h3>ফোনের <b>Downloads</b> থেকে ফাইলটি ট্যাপ করে <b>ইনস্টল</b> চাপুন। "অজানা উৎস" চাইলে <b>চালু</b> করুন।<button class="btn" onclick="this.parentNode.parentNode.remove()"><span>ঠিক আছে</span></button></div>';
 document.body.appendChild(d)}
-function dlApk(a){getF("file:"+a.id,function(b){if(!b){toast("APK ফাইল পাওয়া যায়নি");return}
-var u=URL.createObjectURL(new Blob([b],{type:"application/vnd.android.package-archive"})),l=document.createElement("a");
-l.href=u;l.download=(a.n||"app").replace(/[^\w\u0980-\u09FF -]/g,"")+".apk";document.body.appendChild(l);l.click();l.remove();setTimeout(function(){URL.revokeObjectURL(u)},8000);
-apkHelp()})}
-/* ===== নেটিভ APK ইনস্টল: শুধু Galaxy APK Builder-এর "স্টোর মোড" দিয়ে বানানো অ্যাপে চালু হয়। ব্রাউজারে আগের মতোই কাজ করে ===== */
-var nCancel={},PKG={};
-try{PKG=JSON.parse(localStorage.getItem("appbazar_pk")||"{}")}catch(e){}
-function nat(){return !!(window.Store&&window.Store.apkBegin)}
-function nPkSave(){try{localStorage.setItem("appbazar_pk",JSON.stringify(PKG))}catch(e){}}
-function nEvt(t,id,p,n){try{if(window.__storeEvt)window.__storeEvt(t,"a"+id,p,0,0,n)}catch(e){}}
-window.onStoreCancel=function(e){nCancel[String(e).replace(/^a/,"")]=1};
-function nProg(a,p){S.dling[a.id]=p;if(cur&&cur.id==a.id)refAct();nEvt("progress",a.id,Math.floor(p),a.n)}
-function nFail(a,m){try{Store.apkAbort()}catch(e){}delete S.dling[a.id];if(cur&&cur.id==a.id)refAct();nEvt("failed",a.id,0,a.n);toast(m||"ডাউনলোড ব্যর্থ হয়েছে")}
-function nFin(a){var r={};try{r=JSON.parse(Store.apkEnd())}catch(e){}
-if(r.r!="ok"){nFail(a,r.r=="bad_apk"?"এটি সঠিক APK ফাইল নয়":"ইনস্টল শুরু করা যায়নি");return}
-delete S.dling[a.id];PKG[a.id]=r.pkg;nPkSave();S.inst[a.id]=a.v||1;save();fbCount(a.id);
-if(cur&&cur.id==a.id)refAct();
-nEvt("done",a.id,100,a.n);nEvt("installing",a.id,100,a.n);toast(a.n+" — ইনস্টল স্ক্রিনে “ইনস্টল” চাপুন")}
-function nLocal(a){getF("file:"+a.id,function(b){
-if(!b){nFail(a,"APK ফাইল পাওয়া যায়নি");return}
-var fr=new FileReader();fr.onload=function(){var t=String(fr.result),CH=800000,i=0;
-(function nx(){if(nCancel[a.id]){nFail(a,"ডাউনলোড বাতিল হয়েছে");return}
-if(i>=t.length){nFin(a);return}
-if(Store.apkPut(t.substr(i,CH))!="ok"){nFail(a);return}
-i+=CH;nProg(a,Math.min(95,i/t.length*95));setTimeout(nx,0)})()};
-fr.readAsDataURL(b)})}
-function nInstall(a){var r=Store.apkBegin(a.n||"app");
-if(r=="need_unknown_sources"){toast("সেটিংসে “অজানা সোর্স” অনুমতি দিয়ে ফিরে এসে আবার ইনস্টল চাপুন");return}
-if(r!="ok"){toast("ইনস্টল শুরু করা যায়নি");return}
-nCancel[a.id]=0;nProg(a,0);
-if(!FB.db){nLocal(a);return}
-var ek=fbEnc(String(a.id));
-FB.db.ref("files/"+ek).once("value").then(function(m){
-if(!m.exists()){nLocal(a);return}
-var n=m.val().c,i=0;
-(function nx(){if(nCancel[a.id]){nFail(a,"ডাউনলোড বাতিল হয়েছে");return}
-if(i>=n){nFin(a);return}
-FB.db.ref("filechunks/"+ek+"/c"+i).once("value").then(function(c){
-var t=c.val();if(t==null||Store.apkPut(t)!="ok")throw 0;
-i++;nProg(a,i/n*95);nx()}).catch(function(){nFail(a)})})()
-}).catch(function(){nLocal(a)})}
-function nOpen(a){var p=PKG[a.id],x={};try{x=JSON.parse(Store.isInstalled(p))}catch(e){}
-if(x.installed){Store.open(p)}else{toast("অ্যাপটি ফোনে নেই, আবার ইনস্টল হচ্ছে");nInstall(a)}}
-function nUninst(a){var p=PKG[a.id];if(p&&nat()){try{Store.uninstall(p)}catch(e){}delete PKG[a.id];nPkSave()}}
+function dlApk(a,cb){getF("file:"+a.id,function(b){if(!b){toast("APK ফাইল পাওয়া যায়নি");if(cb)cb(false);return}
+var nm=(a.n||"app").replace(/[^\w\u0980-\u09FF -]/g,"");
+function web(){var u=URL.createObjectURL(new Blob([b],{type:"application/vnd.android.package-archive"})),l=document.createElement("a");
+l.href=u;l.download=nm+".apk";document.body.appendChild(l);l.click();l.remove();setTimeout(function(){URL.revokeObjectURL(u)},8000);
+apkHelp();if(cb)cb(true)}
+/* নেটিভ অ্যান্ড্রয়েড অ্যাপের ভিতরে চালালে সরাসরি ইনস্টল স্ক্রিন খুলবে; ব্রাউজারে আগের মতো ডাউনলোড হবে */
+if(window.Android&&typeof window.Android.installApk=="function"){var fr=new FileReader();
+fr.onload=function(){try{window.Android.installApk(nm+".apk",String(fr.result).split(",")[1]||"");if(cb)cb(true)}catch(e){web()}};
+fr.onerror=web;fr.readAsDataURL(b);return}
+web()})}
 /* reviews */
 function stars(n){return "★★★★★".slice(0,n)+"☆☆☆☆☆".slice(0,5-n)}
 function revHtml(a){var mine=(S.rev[a.id]||[]).slice().reverse().map(function(r){return {n:"আপনি",s:r.s,t:r.t}});
