@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
     private static final int FILE_CHOOSER = 1001;
     private static final String[] PH = new String[]{"__KEY_1__", "__KEY_2__"};
     private static final String[] HINT = new String[]{"API Key (AQ.A****)", "API Key (AIza****)"};
-    private static final String[] WANT = new String[]{"android.permission.CAMERA", "android.permission.RECORD_AUDIO", "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION", "android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.READ_MEDIA_IMAGES", "android.permission.READ_MEDIA_VIDEO", "android.permission.READ_MEDIA_AUDIO", "android.permission.POST_NOTIFICATIONS", "android.permission.READ_CONTACTS"};
+    private static final String[] WANT = new String[]{"android.permission.CAMERA", "android.permission.RECORD_AUDIO", "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION", "android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.READ_MEDIA_IMAGES", "android.permission.READ_MEDIA_VIDEO", "android.permission.READ_MEDIA_AUDIO", "android.permission.POST_NOTIFICATIONS"};
 
     private boolean started = false;
     private PermissionRequest pendingReq;
