@@ -149,6 +149,15 @@ main .pk input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin
 .ab{display:flex;gap:8px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
 .ab input{flex:1;min-width:0;border:1px solid var(--bd);border-radius:24px;background:var(--sf);color:var(--tx);font:inherit;padding:0 16px;height:44px;outline:0}
 .ab button{width:44px;height:44px;border-radius:50%;background:var(--ac);color:#fff;font-size:18px;flex:none}
+
+/* ===== সোশ্যাল যোগাযোগ বাটন (বাম পাশে, সবসময় ভাসমান) ===== */
+#socb{position:fixed;left:14px;bottom:calc(72px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;background:var(--ac);color:#fff;font-size:24px;z-index:6;display:grid;place-items:center;padding:0;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+#socm{position:fixed;left:14px;bottom:calc(132px + env(safe-area-inset-bottom,0px));z-index:6;display:none;flex-direction:column;gap:8px}
+#socm.on{display:flex}
+.si{display:flex;align-items:center;gap:10px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:28px;padding:5px 18px 5px 5px;box-shadow:0 3px 12px rgba(0,0,0,.22);font-size:14px;font-weight:600}
+.si i{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font-style:normal;font-weight:700;font-size:17px;flex:none}
+.si.off{opacity:.5}
+.vb{display:inline-block;vertical-align:middle;margin-left:4px;flex:none}
 </style>
 </head>
 <body>
@@ -158,6 +167,7 @@ main .pk input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin
 <button id="fab" onclick="openAi()" aria-label="AI সহায়ক">🤖</button>
 <div id="det"></div>
 <div id="ai"><div class="ah"><div class="hl" id="ahl"></div><b>Galaxy Icon Ai 🤖</b><button class="x" onclick="closeAi()" aria-label="বন্ধ">✕</button></div><div id="amsg"></div><div class="sg" id="asg"></div><div class="ab"><input id="ain" placeholder="যেমন: গান শোনার অ্যাপ চাই" autocomplete="off"><button onclick="aiSend()" aria-label="পাঠান">➤</button></div></div>
+<div id="socm"></div><button id="socb" onclick="socToggle()" aria-label="যোগাযোগ">📲</button>
 <div id="toast"></div>
 <div id="run"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -480,7 +490,7 @@ function back(){if(cur)history.back()}
 function isReal(a){return a.owner||BI[a.id]}
 function draw(){var a=cur,i=S.inst[a.id],p=S.dling[a.id],h="";
 h+='<div class="bar"><button onclick="back()" aria-label="পেছনে">←</button></div>';
-h+='<div class="dh">'+icon(a)+'<div><h1>'+esc(a.n)+'</h1><p>'+esc(a.d)+'</p></div></div>';
+h+='<div class="dh">'+icon(a)+'<div><h1>'+esc(a.n)+'</h1><p>'+esc(devName(a))+vbH(a.owner)+'</p></div></div>';
 h+='<div class="stats"><div><b>'+bn(avg(a))+' ★</b>'+bn((a.owner?0:20)+(S.rev[a.id]||[]).length)+' রিভিউ</div><div><b>'+szt(a)+'</b>সাইজ</div><div><b id="dlc">'+dlText(a)+'</b>ডাউনলোড</div></div>';
 h+='<div class="act" id="act">'+actHtml(a)+'</div>';
 if(!isReal(a))h+='<div class="demo">ℹ️ এই অ্যাপটি এখন শুধু ডেমো। পূর্ণ সংস্করণে ইন্টারনেট/সার্ভার লাগে, তাই খুললে প্রদর্শনী পর্দা দেখাবে।</div>';
@@ -495,20 +505,21 @@ function actHtml(a){var i=S.inst[a.id],p=S.dling[a.id];
 if(p!=null)return '<button class="btn ghost" onclick="cancelDl()"><span>বাতিল • '+bn(Math.floor(p))+'%</span></button><button class="btn"><div class="pg" style="width:'+p+'%"></div><span>ডাউনলোড হচ্ছে...</span></button>';
 if(i){var u='<button class="btn ghost" onclick="uninst()"><span>আনইনস্টল</span></button>';
 if(i<(a.v||1))return u+'<button class="btn" onclick="install()"><span>আপডেট</span></button>';
-return u+(a.ft=="html"?'<button class="btn ghost" onclick="dlApk(cur)"><span>ডাউনলোড</span></button>':"")+'<button class="btn" onclick="runApp()"><span>'+(a.ft=="apk"?"APK আবার নামান":"খুলুন")+'</span></button>'}
+return u+'<button class="btn" onclick="runApp()"><span>'+(a.ft=="apk"&&!(nat()&&PKG[a.id])?"APK আবার নামান":"খুলুন")+'</span></button>'}
 return '<button class="btn" onclick="install()"><span>ইনস্টল</span></button>'}
 function refAct(){if(cur&&$("act"))$("act").innerHTML=actHtml(cur)}
 var timers={};
-function install(){var a=cur;S.dling[a.id]=0;refAct();
+function install(){var a=cur;if(a&&a.ft=="apk"&&nat()){nInstall(a);return}S.dling[a.id]=0;refAct();
 timers[a.id]=setInterval(function(){S.dling[a.id]+=Math.random()*9+3;
-if(S.dling[a.id]>=100){clearInterval(timers[a.id]);delete S.dling[a.id];S.inst[a.id]=a.v||1;save();fbCount(a.id);toast(a.n+" ইনস্টল হয়েছে");if(a.ft=="apk"||a.ft=="html")dlApk(a);if(cur&&cur.id==a.id)refAct();return}
+if(S.dling[a.id]>=100){clearInterval(timers[a.id]);delete S.dling[a.id];S.inst[a.id]=a.v||1;save();fbCount(a.id);toast(a.n+" ইনস্টল হয়েছে");if(a.ft=="apk")dlApk(a);if(cur&&cur.id==a.id)refAct();return}
 if(cur&&cur.id==a.id)refAct()},250)}
-function cancelDl(){clearInterval(timers[cur.id]);delete S.dling[cur.id];refAct();toast("ডাউনলোড বাতিল হয়েছে")}
-function uninst(){if(confirm(cur.n+" আনইনস্টল করবেন?")){delete S.inst[cur.id];save();refAct();toast("আনইনস্টল হয়েছে")}}
+function cancelDl(){nCancel[cur.id]=1;clearInterval(timers[cur.id]);delete S.dling[cur.id];refAct();toast("ডাউনলোড বাতিল হয়েছে")}
+function uninst(){if(confirm(cur.n+" আনইনস্টল করবেন?")){nUninst(cur);delete S.inst[cur.id];save();refAct();toast("আনইনস্টল হয়েছে")}}
 function openWeb(a,part,trusted){var r=$("run"),u=URL.createObjectURL(new Blob([part],{type:"text/html"}));
 r.className="web";r.style.display="flex";r.style.background="#000";
 r.innerHTML='<div class="rbar"><button onclick="closeRun()">✕ বন্ধ করুন</button><b>'+esc(a.n)+'</b></div><iframe sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads'+(trusted?' allow-same-origin':'')+'" src="'+u+'"></iframe>';r.dataset.u=u}
 function runApp(){var a=cur,r=$("run");
+if(a.ft=="apk"&&nat()&&PKG[a.id]){nOpen(a);return}
 if(a.ft=="apk"){fbCount(a.id);dlApk(a);return}
 if(a.ft=="html"){getF("file:"+a.id,function(b){if(!b){toast("ফাইল পাওয়া যায়নি");return}openWeb(a,b,false)});return}
 if(BI[a.id]&&!a.owner){openWeb(a,BI[a.id],true);return}
@@ -518,10 +529,50 @@ function closeRun(){var r=$("run");if(r.dataset.u){URL.revokeObjectURL(r.dataset
 function apkHelp(){if($("apkh"))return;var d=document.createElement("div");d.id="apkh";
 d.innerHTML='<div class="bx"><h3>📲 APK ইনস্টল করুন</h3>১. ডাউনলোড শেষ হলে নোটিফিকেশন বা ফোনের <b>Downloads</b> ফোল্ডারে ফাইলটি ট্যাপ করুন।<br>২. "অজানা উৎস থেকে ইনস্টল" অনুমতি চাইলে <b>চালু</b> করুন।<br>৩. <b>ইনস্টল</b> ট্যাপ করুন। ইনস্টল শেষে অ্যাপটি ফোনের হোম স্ক্রিনে আসবে।<button class="btn" onclick="this.parentNode.parentNode.remove()"><span>বুঝেছি</span></button></div>';
 document.body.appendChild(d)}
-function dlApk(a){var isA=a.ft=="apk";getF("file:"+a.id,function(b){if(!b){toast("ফাইল পাওয়া যায়নি");return}
-var u=URL.createObjectURL(isA?new Blob([b],{type:"application/vnd.android.package-archive"}):new Blob([b],{type:"text/html"})),l=document.createElement("a");
-l.href=u;l.download=((a.n||"app").replace(/[^\w\u0980-\u09FF -]/g,"")||"app")+(isA?".apk":".html");document.body.appendChild(l);l.click();l.remove();setTimeout(function(){URL.revokeObjectURL(u)},8000);
-if(isA)apkHelp();else toast("ডাউনলোড শুরু হয়েছে")})}
+function dlApk(a){getF("file:"+a.id,function(b){if(!b){toast("APK ফাইল পাওয়া যায়নি");return}
+var u=URL.createObjectURL(new Blob([b],{type:"application/vnd.android.package-archive"})),l=document.createElement("a");
+l.href=u;l.download=(a.n||"app").replace(/[^\w\u0980-\u09FF -]/g,"")+".apk";document.body.appendChild(l);l.click();l.remove();setTimeout(function(){URL.revokeObjectURL(u)},8000);
+apkHelp()})}
+/* ===== নেটিভ APK ইনস্টল: শুধু Galaxy APK Builder-এর "স্টোর মোড" দিয়ে বানানো অ্যাপে চালু হয়। ব্রাউজারে আগের মতোই কাজ করে ===== */
+var nCancel={},PKG={};
+try{PKG=JSON.parse(localStorage.getItem("appbazar_pk")||"{}")}catch(e){}
+function nat(){return !!(window.Store&&window.Store.apkBegin)}
+function nPkSave(){try{localStorage.setItem("appbazar_pk",JSON.stringify(PKG))}catch(e){}}
+function nEvt(t,id,p,n){try{if(window.__storeEvt)window.__storeEvt(t,"a"+id,p,0,0,n)}catch(e){}}
+window.onStoreCancel=function(e){nCancel[String(e).replace(/^a/,"")]=1};
+function nProg(a,p){S.dling[a.id]=p;if(cur&&cur.id==a.id)refAct();nEvt("progress",a.id,Math.floor(p),a.n)}
+function nFail(a,m){try{Store.apkAbort()}catch(e){}delete S.dling[a.id];if(cur&&cur.id==a.id)refAct();nEvt("failed",a.id,0,a.n);toast(m||"ডাউনলোড ব্যর্থ হয়েছে")}
+function nFin(a){var r={};try{r=JSON.parse(Store.apkEnd())}catch(e){}
+if(r.r!="ok"){nFail(a,r.r=="bad_apk"?"এটি সঠিক APK ফাইল নয়":"ইনস্টল শুরু করা যায়নি");return}
+delete S.dling[a.id];PKG[a.id]=r.pkg;nPkSave();S.inst[a.id]=a.v||1;save();fbCount(a.id);
+if(cur&&cur.id==a.id)refAct();
+nEvt("done",a.id,100,a.n);nEvt("installing",a.id,100,a.n);toast(a.n+" — ইনস্টল স্ক্রিনে “ইনস্টল” চাপুন")}
+function nLocal(a){getF("file:"+a.id,function(b){
+if(!b){nFail(a,"APK ফাইল পাওয়া যায়নি");return}
+var fr=new FileReader();fr.onload=function(){var t=String(fr.result),CH=800000,i=0;
+(function nx(){if(nCancel[a.id]){nFail(a,"ডাউনলোড বাতিল হয়েছে");return}
+if(i>=t.length){nFin(a);return}
+if(Store.apkPut(t.substr(i,CH))!="ok"){nFail(a);return}
+i+=CH;nProg(a,Math.min(95,i/t.length*95));setTimeout(nx,0)})()};
+fr.readAsDataURL(b)})}
+function nInstall(a){var r=Store.apkBegin(a.n||"app");
+if(r=="need_unknown_sources"){toast("সেটিংসে “অজানা সোর্স” অনুমতি দিয়ে ফিরে এসে আবার ইনস্টল চাপুন");return}
+if(r!="ok"){toast("ইনস্টল শুরু করা যায়নি");return}
+nCancel[a.id]=0;nProg(a,0);
+if(!FB.db){nLocal(a);return}
+var ek=fbEnc(String(a.id));
+FB.db.ref("files/"+ek).once("value").then(function(m){
+if(!m.exists()){nLocal(a);return}
+var n=m.val().c,i=0;
+(function nx(){if(nCancel[a.id]){nFail(a,"ডাউনলোড বাতিল হয়েছে");return}
+if(i>=n){nFin(a);return}
+FB.db.ref("filechunks/"+ek+"/c"+i).once("value").then(function(c){
+var t=c.val();if(t==null||Store.apkPut(t)!="ok")throw 0;
+i++;nProg(a,i/n*95);nx()}).catch(function(){nFail(a)})})()
+}).catch(function(){nLocal(a)})}
+function nOpen(a){var p=PKG[a.id],x={};try{x=JSON.parse(Store.isInstalled(p))}catch(e){}
+if(x.installed){Store.open(p)}else{toast("অ্যাপটি ফোনে নেই, আবার ইনস্টল হচ্ছে");nInstall(a)}}
+function nUninst(a){var p=PKG[a.id];if(p&&nat()){try{Store.uninstall(p)}catch(e){}delete PKG[a.id];nPkSave()}}
 /* reviews */
 function stars(n){return "★★★★★".slice(0,n)+"☆☆☆☆☆".slice(0,5-n)}
 function revHtml(a){var mine=(S.rev[a.id]||[]).slice().reverse().map(function(r){return {n:"আপনি",s:r.s,t:r.t}});
@@ -555,7 +606,7 @@ function setAm(m){S.am=m;render()}
 function setForm(v){S.form=v;render();$("main").scrollTop=0}
 function err(t){$("er").textContent=t}
 function accHtml(){var u=me();if(!u){S.me=null;return S.am?signupHtml():loginHtml()}
-if(S.form!=null&&u.t=="dev")return formHtml(S.form===0?null:APPS.filter(function(a){return a.id==S.form})[0]);
+if(S.form==="prof")return profEditHtml(u);if(S.form!=null&&u.t=="dev")return formHtml(S.form===0?null:APPS.filter(function(a){return a.id==S.form})[0]);
 return profHtml(u)}
 function loginHtml(){return '<div class="auth"><div class="logo">👤</div><h1>লগইন করুন</h1><p class="sub">আপনার জিমেইল ও পাসওয়ার্ড দিন</p><input id="ae" type="email" placeholder="জিমেইল (example@gmail.com)" autocapitalize="none" autocomplete="email"><input id="ap" type="password" placeholder="পাসওয়ার্ড"><div class="err" id="er"></div><button class="btn" onclick="doLogin()"><span>লগইন</span></button><p class="sw">একাউন্ট নেই? <a onclick="setAm(1)">নতুন একাউন্ট খুলুন</a></p></div>'}
 function devF(){$("devf").style.display=document.querySelector("input[name=at]:checked").value=="dev"?"block":"none"}
@@ -583,7 +634,7 @@ function logout(){S.me=null;S.am=0;S.form=null;save();render();toast("লগআ�
 function profHtml(u){var dev=u.t=="dev",mine=APPS.filter(function(a){return a.owner==u.e}),h="",nr=0;
 for(var k in S.rev)nr+=S.rev[k].length;
 var ph=IMG["photo:"+u.e];
-h+='<div class="prof"><div class="av">'+(ph?'<img src="'+ph+'" alt="">':u.n.charAt(0))+'</div><div><b style="font-size:18px">'+u.n+'</b><div class="sub">'+u.e+'</div><span class="badge">'+(dev?"💻 অ্যাপ ডেভেলপার":"📱 অ্যাপ ইউজার")+'</span></div></div>';
+h+='<div class="prof"><div class="av">'+(ph?'<img src="'+ph+'" alt="">':u.n.charAt(0))+'</div><div><b style="font-size:18px">'+u.n+'</b>'+vbH(u.e)+'<div class="sub">'+u.e+'</div><span class="badge">'+(dev?"💻 অ্যাপ ডেভেলপার":"📱 অ্যাপ ইউজার")+'</span></div></div><div class="fm" style="padding-top:0"><button class="btn ghost" onclick="editProf()"><span>✏️ নাম ও ছবি বদলান</span></button></div>';
 if(dev)h+='<div class="info">📞 '+bn(u.ph)+'<br>📍 '+u.th+', '+u.di+'</div>';
 h+='<div class="stats"><div><b>'+bn(Object.keys(S.inst).length)+'</b>ইনস্টল করা</div><div><b>'+bn(nr)+'</b>রিভিউ</div>'+(dev?'<div><b>'+bn(mine.length)+'</b>প্রকাশিত অ্যাপ</div>':'')+'</div>';
 if(dev){h+='<div class="fm"><button class="btn" onclick="setForm(0)"><span>➕ নতুন অ্যাপ প্রকাশ করুন</span></button></div>';
@@ -870,6 +921,42 @@ else if(p&&isW(p)==isW(B[sel]))sel=i;
 else{var cap=p,m=B[sel];B[i]=m;B[sel]="";if(m=="♙"&&i<8)B[i]="♕";if(m=="♟"&&i>=56)B[i]="♛";sel=null;tn^=1;draw();if(cap=="♔"||cap=="♚")setTimeout(function(){alert((cap=="♔"?"⚫ কালো":"⚪ সাদা")+" জিতেছে! 🎉")},50);return}
 draw()};
 window.ng=ng;ng()});
+
+
+/* ====== ভেরিফাইড ব্যাজ (অ্যাডমিন প্যানেল থেকে নিয়ন্ত্রিত) ====== */
+function vList(){var v=S.adminCfg&&S.adminCfg.verified;return Array.isArray(v)?v.filter(Boolean):Object.keys(v||{}).map(function(k){return v[k]}).filter(Boolean)}
+function isVer(e){return !!e&&vList().indexOf(e)>=0}
+function vbH(e){return isVer(e)?'<svg class="vb" viewBox="0 0 24 24" width="18" height="18" aria-label="ভেরিফাইড"><circle cx="12" cy="12" r="11" fill="#1d9bf0"/><path d="M7 12.4l3.3 3.2L17 8.9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>':""}
+function devName(a){var o=a&&a.owner&&S.users.filter(function(x){return x.e==a.owner})[0];return o?o.n:a.d}
+
+/* ====== প্রোফাইল এডিট (নাম ও ছবি) ====== */
+function editProf(){P={};S.form="prof";render();$("main").scrollTop=0}
+function profEditHtml(u){var ph=IMG["photo:"+u.e];
+return '<div class="bar2"><button onclick="setForm(null)">← ফিরে যান</button></div><div class="fm"><div class="lb">প্রোফাইল এডিট করুন</div>'
++'<div class="lb2" style="text-align:center">আপনার ছবি</div><label class="pk ph"><input type="file" accept="image/*" onchange="pickImg(this,\'photo\',256,256)"><span id="pv_photo">'+(ph?'<img src="'+ph+'" alt="">':'+ ছবি')+'</span></label>'
++'<div class="lb2">আপনার নাম</div><input id="en" placeholder="আপনার নাম" maxlength="40" value="'+esc(u.n)+'">'
++'<div class="err" id="er"></div><button class="btn" onclick="saveProf()"><span>সেভ করুন</span></button></div>'}
+function saveProf(){var u=me();if(!u)return;var n=clean($("en").value.trim());
+if(!n)return err("নাম লিখুন");
+function fin(){u.n=n;S.form=null;save();render();toast("প্রোফাইল আপডেট হয়েছে")}
+if(!P.photo)return fin();
+putF("photo:"+u.e,P.photo,function(ok){if(!ok)return err("ছবি সেভ করা যায়নি, ব্রাউজারে জায়গা আছে কিনা দেখুন");IMG["photo:"+u.e]=P.photo;fin()})}
+
+/* ====== সোশ্যাল বাটন: বাম পাশে ভাসমান, ট্যাপ করলে লিংকে যাবে ====== */
+var SOC=[["tiktok","TikTok","♪","#000"],["youtube","YouTube","▶","#ff0000"],["facebook","Facebook","f","#1877f2"],["telegram","Telegram","✈","#229ed9"],["whatsapp","WhatsApp","✆","#25d366"]];
+function socCfg(){return (S.adminCfg&&S.adminCfg.social)||{}}
+function socUrl(k,v){v=String(v||"").trim();if(!v)return "";
+if(k=="whatsapp"){if(/^https?:\/\//i.test(v))return v;var d=v.replace(/\D/g,"");if(!d)return "";if(/^01/.test(d))d="88"+d;else if(/^1\d{9}$/.test(d))d="880"+d;return "https://wa.me/"+d}
+if(k=="telegram"&&!/^https?:\/\//i.test(v)){v=v.replace(/^@/,"").replace(/^(https?:\/\/)?(t\.me|telegram\.me)\//i,"");return v?"https://t.me/"+v:""}
+if(!/^https?:\/\//i.test(v))v="https://"+v;return v}
+function socToggle(){var m=$("socm");if(m.className=="on"){socClose();return}
+var c=socCfg();
+m.innerHTML=SOC.map(function(s){var on=!!socUrl(s[0],c[s[0]]);return '<button class="si'+(on?"":" off")+'" onclick="socGo(\''+s[0]+'\')"><i style="background:'+s[3]+'">'+s[2]+'</i>'+s[1]+'</button>'}).join("");
+m.className="on"}
+function socClose(){$("socm").className=""}
+function socGo(k){var url=socUrl(k,socCfg()[k]);if(!url){toast("এই লিংক এখনও যোগ করা হয়নি");return}
+socClose();var a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener noreferrer";document.body.appendChild(a);a.click();a.remove()}
+document.addEventListener("click",function(e){var m=$("socm");if(m.className!="on")return;var t=e.target;if(m.contains(t)||$("socb").contains(t))return;socClose()});
 
 render();
 FB.A={
