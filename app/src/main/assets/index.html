@@ -161,6 +161,30 @@ main .pk input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin
 </style>
 </head>
 <body>
+<style>
+#cbn{display:flex;align-items:center;gap:10px;width:100%;padding:8px 14px;background:var(--ac2);border-bottom:1px solid var(--bd);text-align:left;flex:none}
+#cbn .cr{width:30px;height:30px;flex:none;border-radius:50%;background:conic-gradient(#ea4335 0 120deg,#fbbc05 120deg 240deg,#34a853 240deg 360deg);display:grid;place-items:center}
+#cbn .cr:after{content:"";width:12px;height:12px;border-radius:50%;background:#4285f4;border:2.5px solid #fff;box-sizing:content-box}
+#cbn .ct{flex:1;min-width:0;font-size:13.5px;line-height:1.35;color:var(--tx)}
+#cbn .ct b{display:block;font-size:14px}
+#cbn .cg{flex:none;padding:7px 14px;border-radius:18px;background:var(--ac);color:#fff;font-weight:700;font-size:13px}
+</style>
+<button id="cbn" onclick="openStoreChrome()" aria-label="ক্রোমে খুলুন"><span class="cr"></span><span class="ct"><b>অ্যাপ ডাউনলোড করতে চান?</b>ক্রোমে খুলে আমাদের স্টোর থেকে ডাউনলোড করুন</span><span class="cg">Chrome-এ খুলুন</span></button>
+<script>
+function openStoreChrome(){var u="";
+try{u=String((S.adminCfg&&S.adminCfg.storeUrl)||"").trim()}catch(e){}
+if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
+if(!/^https?:\/\//i.test(u))u=location.href;
+if(!/^https?:/i.test(u)){try{navigator.clipboard.writeText(u)}catch(e){}
+try{toast("স্টোরের লিংক এখনও যোগ করা হয়নি")}catch(e){}return}
+try{toast("Chrome-এ খুলছে...")}catch(e){}
+var ua=navigator.userAgent,b=u.split("#")[0];
+var plain=!/android/i.test(ua)||(/Chrome\//.test(ua)&&!/; wv\)|Version\/\d+\.\d+ Chrome|FBAN|FBAV|Instagram|Line\/|Telegram/i.test(ua));
+if(plain){var w=window.open(u,"_blank");if(!w)location.href=u;return}
+var sc=b.split(":")[0].toLowerCase(),rest=b.replace(/^https?:\/\//i,"");
+location.href="intent://"+rest+"#Intent;scheme="+sc+";package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(b)+";end";
+setTimeout(function(){if(!document.hidden)location.href=u},1800)}
+</script>
 <header><button class="hl" id="hl" onclick="openAi()" aria-label="Galaxy Icon Ai সহায়ক"></button><label class="search">🔍<input id="q" placeholder="অ্যাপ ও গেম খুঁজুন" autocomplete="off"></label><button class="hp" id="hp" onclick="go('acc')" aria-label="একাউন্ট"></button></header>
 <main id="main"></main>
 <nav id="nav"></nav>
@@ -523,8 +547,7 @@ return true}catch(e){return false}}
 function dlAuto(){var m=/[?&]dl=([^&#]+)/.exec(location.search);if(!m)return;var id=decodeURIComponent(m[1]),n=0;
 try{history.replaceState(null,"",location.pathname)}catch(e){}
 var t=setInterval(function(){var a=APPS.filter(function(x){return String(x.id)==id})[0];
-if(a&&a.ft=="apk"){clearInterval(t);openDet(a.id);toast("ডাউনলোড শুরু হচ্ছে...");
-dlApk(a,function(ok){if(!ok)return;S.inst[a.id]=a.v||1;save();fbCount(a.id);if(cur&&cur.id==a.id)refAct()});return}
+if(a){clearInterval(t);openDet(a.id);toast("ডাউনলোড করতে ইনস্টল চাপুন");return}
 if(++n>50){clearInterval(t);toast("অ্যাপটি পাওয়া যায়নি, ইন্টারনেট দেখুন")}},400)}
 function install(){var a=cur;
 if(a.ft=="apk"){if(openChrome(a))return;dlApk(a,function(ok){if(!ok)return;S.inst[a.id]=a.v||1;save();fbCount(a.id);toast(a.n+" ডাউনলোড হচ্ছে");if(cur&&cur.id==a.id)refAct()});return}
