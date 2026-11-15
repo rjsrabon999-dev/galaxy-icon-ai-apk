@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.webapp.galaxyiconaivxesi'
+    namespace 'com.webapp.galaxyiconaixzgxz'
     compileSdk 34
 
     defaultConfig {
-        applicationId 'com.webapp.galaxyiconaivxesi'
+        applicationId 'com.webapp.galaxyiconaixzgxz'
         minSdk 21
         targetSdk 34
         versionCode 1
