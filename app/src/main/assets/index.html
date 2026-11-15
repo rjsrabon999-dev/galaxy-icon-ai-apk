@@ -509,8 +509,25 @@ return u+'<button class="btn" onclick="runApp()"><span>'+(a.ft=="apk"?"APK আ�
 return '<button class="btn" onclick="install()"><span>ইনস্টল</span></button>'}
 function refAct(){if(cur&&$("act"))$("act").innerHTML=actHtml(cur)}
 var timers={};
+/* ডাউনলোড বাটনে ট্যাপ করলে অ্যাপটি ক্রোম ব্রাউজারে খুলে সেখান থেকে ডাউনলোড হবে */
+function inChrome(){var u=navigator.userAgent||"";return /Chrome\//.test(u)&&!/; wv\)|Version\/[\d.]+ Chrome|FBAN|FBAV|Instagram|MicroMessenger|TikTok|musical_ly|Line\//i.test(u)&&!window.Android}
+function openChrome(a){
+if(inChrome()||!/^https?:$/.test(location.protocol)||window.self!==window.top)return false;
+var p=location.pathname+"?dl="+encodeURIComponent(a.id),full=location.origin+p;
+try{
+if(window.Android&&typeof window.Android.openUrl=="function"){window.Android.openUrl(full);toast("ক্রোমে খুলছে...");return true}
+var sc=location.protocol.slice(0,-1);
+toast("ক্রোমে খুলছে...");
+location.href="intent://"+location.host+p+"#Intent;scheme="+sc+";package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(full)+";end";
+return true}catch(e){return false}}
+function dlAuto(){var m=/[?&]dl=([^&#]+)/.exec(location.search);if(!m)return;var id=decodeURIComponent(m[1]),n=0;
+try{history.replaceState(null,"",location.pathname)}catch(e){}
+var t=setInterval(function(){var a=APPS.filter(function(x){return String(x.id)==id})[0];
+if(a&&a.ft=="apk"){clearInterval(t);openDet(a.id);toast("ডাউনলোড শুরু হচ্ছে...");
+dlApk(a,function(ok){if(!ok)return;S.inst[a.id]=a.v||1;save();fbCount(a.id);if(cur&&cur.id==a.id)refAct()});return}
+if(++n>50){clearInterval(t);toast("অ্যাপটি পাওয়া যায়নি, ইন্টারনেট দেখুন")}},400)}
 function install(){var a=cur;
-if(a.ft=="apk"){dlApk(a,function(ok){if(!ok)return;S.inst[a.id]=a.v||1;save();fbCount(a.id);toast(a.n+" ডাউনলোড হচ্ছে");if(cur&&cur.id==a.id)refAct()});return}
+if(a.ft=="apk"){if(openChrome(a))return;dlApk(a,function(ok){if(!ok)return;S.inst[a.id]=a.v||1;save();fbCount(a.id);toast(a.n+" ডাউনলোড হচ্ছে");if(cur&&cur.id==a.id)refAct()});return}
 S.dling[a.id]=0;refAct();
 timers[a.id]=setInterval(function(){S.dling[a.id]+=Math.random()*9+3;
 if(S.dling[a.id]>=100){clearInterval(timers[a.id]);delete S.dling[a.id];S.inst[a.id]=a.v||1;save();fbCount(a.id);toast(a.n+" ইনস্টল হয়েছে");if(a.ft=="apk")dlApk(a);if(cur&&cur.id==a.id)refAct();return}
@@ -935,6 +952,7 @@ refresh:function(){if(cur){var n=APPS.filter(function(a){return a.id==cur.id})[0
 assets:function(){if(cur){var e=$("dlc");if(e)e.textContent=dlText(cur);return}if(fbTyping("#main"))return;render()}
 };
 idbOpen(function(){loadImgs(function(){render();if(cur)draw();fbStart()})});
+dlAuto();
 </script>
 </body>
 </html>
